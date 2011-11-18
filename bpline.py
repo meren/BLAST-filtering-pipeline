@@ -15,12 +15,12 @@
 #
 
 # standard python modules
+import os
 import sys
 
 # non-standard python modules
-from pipeline.utils import utils
-from pipeline.utils import fastalib
 from pipeline.utils.cmdlinehandler import get_parser_obj
+from pipeline.classes.constants import Constants as c
 from pipeline.classes.config import Config
 
 def main(config):
@@ -30,10 +30,4 @@ def main(config):
         sys.exit()
 
 if __name__ == '__main__':
-    config = Config(get_parser_obj().parse_args())
-    
-    config.print_summary()
-
-    sys.exit(main(config))
-
-
+    sys.exit(main(Config(get_parser_obj().parse_args(), c(os.path.dirname(os.path.abspath(__file__))))))
