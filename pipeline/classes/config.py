@@ -11,12 +11,12 @@
 
 import os
 import sys
+import imp
 from ConfigParser import ConfigParser
 
 from pipeline.utils import utils
 from pipeline.classes.filter import Filter
-from pipeline.modules import modules
-
+from pipeline.utils.logger import debug
 
 class ConfigError(Exception):
     def __init__(self, e = None):
@@ -45,16 +45,29 @@ class ConfigParserWrapper(ConfigParser):
 
 
 class Config:
-    def __init__(self, args = None):
+    def __init__(self, args, constants):
         if args:
             self.r1 = args.r1
             self.r2 = args.r2
             self.output_dir = args.output_dir
+            self.constants = constants
             self.filters = []
+            self.modules = {}
 
+            self.init_modules()
             self.init_filters_config(args.filters_config)
             self.init_chain_of_filters()
             self.init_essential_files_and_directories()
+
+    
+    def init_modules(self):
+        mod_base = self.constants.dirs['modules']
+        for file in os.listdir(mod_base):
+            if file.startswith('mod_') and file.endswith('.py'):
+                mod_name = file[4:-3]
+                self.modules[mod_name] = imp.load_source(mod_name, os.path.join(mod_base, file))
+                debug('Module "%s" found' % mod_name)
+
 
     def init_filters_config(self, config_file_path):
         filters_config = ConfigParserWrapper(config_file_path)
@@ -64,11 +77,11 @@ class Config:
             filter.name = filters_config.get(section, 'filter_name')
             
             filter_module = filters_config.get(section, 'module')
-            if not modules.modules_dict.has_key(filter_module):
+            if not self.modules.has_key(filter_module):
                 raise ConfigError, 'Unknown module for filter "%s": "%s".\nAvailable modules:\n%s' \
-                                   % (filter.name, filter_module, modules.available_modules())
+                                   % (filter.name, filter_module, ', '.join(self.modules.keys()))
             else:
-                filter.module = modules.modules_dict[filter_module]
+                filter.module = self.modules[filter_module]
 
             filter.dirs['root']  = self.output_dir
             filter.dirs['base']  = os.path.join(self.output_dir, filter.name)
