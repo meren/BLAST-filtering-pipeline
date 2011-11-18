@@ -1,11 +1,12 @@
+______
 README
 ======
 
 This code base contains a very early draft of what it promises. So, it might be a good idea to ignore this project for now.
 
 
-Aim
-___
+Aim of This Project
+===================
 
 Well. One of the problems I was dealing with while I was working with shotgun metagenomics data obtained from Illumina was to filter out certain things from millions of sequences to get them to a point where I can start analyzing them. For instance, in the context of metagenomics, what a researcher might want to do right after quality control and right before assembling longer contigs from her sequences is to filter out reads that are coming from other sources such as human genome, or viral genomes. Moreover, she might like to filter out 16S rRNA genes from this collection of reads in order to analyze taxonomy separately and/or simply to reduce the size of reads.
 
@@ -17,7 +18,7 @@ It is absoultely not there yet, but my aim is to develop this pipeline to a poin
 
 
 Filters Configuration
-_____________________
+=====================
 
 Filters are going to be defined in a configuration file. Here is a sample:
 
@@ -38,7 +39,7 @@ More explanation about the structure of the configuration file will be here.
 
 
 Flow
-____
+====
 
 Basically this is what is going to be happening when someone runs the pipeline:
 
@@ -50,8 +51,8 @@ Basically this is what is going to be happening when someone runs the pipeline:
 6. Else, report everything.
 
 
-Contact
-_______
+Contact me
+==========
 
 You can reach [me](http://meren.org) via `meren / mbl.edu`. All suggestions and critiques are most welcome.
 
