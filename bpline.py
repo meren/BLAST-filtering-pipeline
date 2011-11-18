@@ -11,23 +11,23 @@
 # Please read the docs/COPYING file.
 
 #
-# bpline.py
+# bpline.py: user command line interface.
 #
 
 # standard python modules
 import sys
 
 # non-standard python modules
-from utils import utils
-from utils import fastalib
-from utils.cmdlinehandler import get_parser_obj
-from classes.config import Config
+from pipeline.utils import utils
+from pipeline.utils import fastalib
+from pipeline.utils.cmdlinehandler import get_parser_obj
+from pipeline.classes.config import Config
 
 def main(config):
     for filter in config.filters:
         config.init_filter_files_and_directories(filter)
         filter.run()
-
+        sys.exit()
 
 if __name__ == '__main__':
     config = Config(get_parser_obj().parse_args())

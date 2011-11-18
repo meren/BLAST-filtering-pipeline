@@ -13,8 +13,9 @@ import os
 import sys
 from ConfigParser import ConfigParser
 
-from utils import utils
-from classes.filter import Filter
+from pipeline.utils import utils
+from pipeline.classes.filter import Filter
+from pipeline.modules import modules
 
 
 class ConfigError(Exception):
@@ -61,7 +62,15 @@ class Config:
         for section in filters_config.sections():
             filter = Filter(section)
             filter.name = filters_config.get(section, 'filter_name')
+            
+            filter_module = filters_config.get(section, 'module')
+            if not modules.modules_dict.has_key(filter_module):
+                raise ConfigError, 'Unknown module for filter "%s": "%s".\nAvailable modules:\n%s' \
+                                   % (filter.name, filter_module, modules.available_modules())
+            else:
+                filter.module = modules.modules_dict[filter_module]
 
+            filter.dirs['root']  = self.output_dir
             filter.dirs['base']  = os.path.join(self.output_dir, filter.name)
             filter.dirs['parts'] = os.path.join(filter.dirs['base'], 'parts')
             self.filters.append(filter)
@@ -87,12 +96,12 @@ class Config:
                 filter.files['in_r1'] = self.filters[i - 1].files['filtered_r1']
                 filter.files['in_r2'] = self.filters[i - 1].files['filtered_r2']
           
-            filter.files['raw_b6']       = WORK_DIR('--'.join([os.path.basename(self.r1), filter.name + '.b6']))
-            filter.files['inspected_b6'] = WORK_DIR('--'.join([os.path.basename(self.r1), filter.name + '.inspected-b6']))
-            filter.files['out_r1']       = WORK_DIR('--'.join([os.path.basename(self.r1), filter.name]))
-            filter.files['out_r2']       = WORK_DIR('--'.join([os.path.basename(self.r2), filter.name]))
-            filter.files['filtered_r1']  = OUTPUT_DIR('--'.join([filter.files['in_r1'], filter.name + '_filtered']))
-            filter.files['filtered_r2']  = OUTPUT_DIR('--'.join([filter.files['in_r2'], filter.name + '_filtered']))
+            filter.files['search_output'] = WORK_DIR('--'.join([os.path.basename(self.r1), filter.name + '.SEARCH-RESULTS']))
+            filter.files['refined_search_output'] = WORK_DIR('--'.join([os.path.basename(self.r1), filter.name + '.SEARCH-RESULTS-REFINED']))
+            filter.files['out_r1'] = WORK_DIR('--'.join([os.path.basename(self.r1), filter.name]))
+            filter.files['out_r2'] = WORK_DIR('--'.join([os.path.basename(self.r2), filter.name]))
+            filter.files['filtered_r1'] = OUTPUT_DIR('--'.join([filter.files['in_r1'], filter.name + '_filtered']))
+            filter.files['filtered_r2'] = OUTPUT_DIR('--'.join([filter.files['in_r2'], filter.name + '_filtered']))
 
     def init_essential_files_and_directories(self):
         IS_RELATIVE = lambda d: not d.startswith('/')
@@ -115,9 +124,10 @@ class Config:
         print('\nSummary of filters and input/output destinations:\n--')
         for filter in self.filters:
             utils.info('Filter name', filter.name)
+            utils.info('Module', filter.module.__name__)
             utils.info('Target DB', filter.target_db)
-            utils.info('Raw B6 Output', filter.files['raw_b6'])
-            utils.info('Inspected B6 Output', filter.files['inspected_b6'])
+            utils.info('Search Output', filter.files['search_output'])
+            utils.info('Inspected Search Output', filter.files['refined_search_output'])
             utils.info('R1 input', filter.files['in_r1'])
             utils.info('R2 input', filter.files['in_r2'])
             utils.info('R1 output', filter.files['out_r1'])

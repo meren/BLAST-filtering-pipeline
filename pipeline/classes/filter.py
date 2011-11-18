@@ -13,18 +13,18 @@ import os
 import sys
 from ConfigParser import ConfigParser
 
-from utils import utils
+from pipeline.utils import utils
+from pipeline.modules import modules
 
 class Filter:
     def __init__(self, target_db):
         self.target_db = target_db
         self.name = None
+        self.module = None
         self.dirs = {}
         self.files = {}
-        self.in_r1 = None
-        self.in_r2 = None
-        self.out_r1 = None
-        self.out_r2 = None
 
     def run(self):
-        pass
+        self.module.init(self)
+        self.module.run(self)
+        self.module.finalize(self)
