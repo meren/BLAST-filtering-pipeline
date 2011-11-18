@@ -11,13 +11,17 @@
 # Please read the docs/COPYING file.
 
 class SequenceSource:
-    def __init__(self, f_name):
+    def __init__(self, f_name, lazy_init = True):
         self.pos = 0
         self.id  = None
         self.seq = None
         self.file_pointer = open(f_name)
-        self.total_seq = len([l for l in self.file_pointer.readlines() if l.startswith('>')])
         self.file_pointer.seek(0)
+        
+        if lazy_init:
+            self.total_seq = None
+        else:
+            self.total_seq = len([l for l in self.file_pointer.readlines() if l.startswith('>')])
 
     def next(self):
         self.id = self.file_pointer.readline()[1:].strip()
