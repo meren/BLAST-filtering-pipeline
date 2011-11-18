@@ -11,11 +11,26 @@
 
 description = "USEARCH module"
 
+from pipeline.utils import utils
+
+class ModuleError(Exception):
+    def __init__(self, e = None):
+        Exception.__init__(self)
+        self.e = e
+        return
+    def __str__(self):
+        return 'Config Error: %s' % self.e
+
 def init(f_object):
-    pass
+    # split input file into numerous smaller pieces:
+    utils.check_dir(f_object.dirs['parts'], clean_dir_content = True)
+    f_object.files['r1_parts'] = utils.split_fasta_file(f_object.files['in_r1'], f_object.dirs['parts'], prefix = 'r1-part')
+    
+    if not len(f_object.files['r1_parts']):
+        raise ModuleError, 'split_fasta_file returned 0 for "%s"' % f_object.files['in_r1']
 
 def run(f_object):
-    pass
+    print f_object.files['r1_parts']
 
 def finalize(f_object):
     pass
