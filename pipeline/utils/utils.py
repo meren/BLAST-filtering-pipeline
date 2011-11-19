@@ -57,9 +57,9 @@ def check_dir(dir, create=True, clean_dir_content = False):
     return True
 
 def delete_files_in_dir(dir):
+    debug('removing content of "%s"' % dir)
     for f in os.listdir(dir):
-        print 'remove,', os.path.join(dir, f)
-        #os.unlink(os.path.join(dir, f))
+        os.unlink(os.path.join(dir, f))
 
 def info(label, value, mlen = 30, file_obj = None):
     info_line = "%s %s: %s" % (label, '.' * (mlen - len(label)), str(value))

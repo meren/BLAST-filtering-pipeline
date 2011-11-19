@@ -11,7 +11,12 @@
 
 description = "USEARCH module"
 
+cmdline = "usearch -query %(input)s -blast6out %(output)s -wdb %(target_db)s %(params_from_config)s &> %(log)s"
+rfnparams = {'min_alignment_length': int, 
+             'min_identity': float}
+
 from pipeline.utils import utils
+
 
 class ModuleError(Exception):
     def __init__(self, e = None):
@@ -30,7 +35,16 @@ def init(f_object):
         raise ModuleError, 'split_fasta_file returned 0 for "%s"' % f_object.files['in_r1']
 
 def run(f_object):
-    print f_object.files['r1_parts']
+    for part in f_object.files['r1_parts']:
+        cmdline % {
+                            'input': part,
+                            'output': part + '.b6',
+                            'target_db': f_object.target_db,
+                            'log': part + '.log',
+                            'params_from_config': None,
+
+                        }
+                
 
 def finalize(f_object):
     pass

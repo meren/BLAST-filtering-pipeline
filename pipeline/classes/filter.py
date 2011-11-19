@@ -14,13 +14,14 @@ import sys
 from ConfigParser import ConfigParser
 
 from pipeline.utils import utils
-from pipeline.modules import modules
 
 class Filter:
     def __init__(self, target_db):
         self.target_db = target_db
         self.name = None
         self.module = None
+        self.cmdparams = []
+        self.rfnparams = []
         self.dirs = {}
         self.files = {}
 
@@ -28,3 +29,9 @@ class Filter:
         self.module.init(self)
         self.module.run(self)
         self.module.finalize(self)
+
+    def get_refinement_params(self):
+        if hasattr(self.module, 'rfnparams'):
+            return self.module.rfnparams.keys()
+        else:
+            return []

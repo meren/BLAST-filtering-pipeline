@@ -17,11 +17,13 @@ from ConfigParser import ConfigParser
 from pipeline.utils import utils
 from pipeline.classes.filter import Filter
 from pipeline.utils.logger import debug
+from pipeline.utils.logger import error
 
 class ConfigError(Exception):
     def __init__(self, e = None):
         Exception.__init__(self)
         self.e = e
+        error(e)
         return
     def __str__(self):
         return 'Config Error: %s' % self.e
@@ -66,7 +68,7 @@ class Config:
             if file.startswith('mod_') and file.endswith('.py'):
                 mod_name = file[4:-3]
                 self.modules[mod_name] = imp.load_source(mod_name, os.path.join(mod_base, file))
-                debug('Module "%s" found' % mod_name)
+                debug('module "%s" found' % mod_name)
 
 
     def init_filters_config(self, config_file_path):
@@ -82,6 +84,26 @@ class Config:
                                    % (filter.name, filter_module, ', '.join(self.modules.keys()))
             else:
                 filter.module = self.modules[filter_module]
+
+            # store command line parameters from the config file
+            for option in [o for o in filters_config.options(section) if o.startswith('cmdparam.')]:
+                param = '.'.join(option.split('.')[1:])
+                opt = filters_config.get(section, option)
+                filter.cmdparams.append('%s %s' % (param, opt))
+               
+            debug('command line params for filter "%s": %s ' % (filter.name, filter.cmdparams))
+
+            # store post-search refinement filters from the config file
+            for option in [o for o in filters_config.options(section) if o.startswith('rfnparam.')]:
+                param = '.'.join(option.split('.')[1:])
+                opt = filters_config.get(section, option)
+                if param in filter.get_refinement_params():
+                    filter.rfnparams.append((param, filter.module.rfnparams[param](opt)),)
+                else:
+                    raise ConfigError, 'Unknown refinement parameter for filter "%s": "%s"' \
+                                   % (filter.name, param)
+            
+            debug('refinement line params for filter "%s": %s ' % (filter.name, filter.rfnparams))
 
             filter.dirs['root']  = self.output_dir
             filter.dirs['base']  = os.path.join(self.output_dir, filter.name)
@@ -128,7 +150,7 @@ class Config:
         if not os.path.exists(self.r2):
             raise ConfigError, 'Pair 2 is not where it is expected to be: "%s"' % self.r2
 
-        utils.check_dir(self.output_dir, clean_dir_content = True)
+        utils.check_dir(self.output_dir, clean_dir_content = False)
 
     def init_filter_files_and_directories(self, filter):
         utils.check_dir(filter.dirs['parts'])
