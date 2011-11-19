@@ -10,10 +10,36 @@
 # Please read the docs/COPYING file.
 
 from pipeline.utils.logger import debug
+from pipeline.utils.logger import error 
 from pipeline.utils.fastalib import SequenceSource
 
 import os
 import sys
+import subprocess
+
+class UtilsError(Exception):
+    def __init__(self, e = None):
+        Exception.__init__(self)
+        self.e = e
+        error(e)
+        return
+    def __str__(self):
+        return 'Utils Error: %s' % self.e
+
+def concatenate_files(dest_file, file_list):
+    dest_file_obj = open(dest_file, 'w')
+    for chunk_path in file_list:
+        for line in open(chunk_path):
+            dest_file_obj.write(line)
+
+    return dest_file_obj.close()
+
+def run_command(cmdline):
+       try:
+           if subprocess.call(cmdline, shell = True) < 0:
+               raise UtilsError, "command was terminated by signal: %d" % (-retcode)
+       except OSError, e:
+           raise UtilsError, "command was failed for the following reason: '%s' ('%s')" % (e, cmdline)   
 
 def split_fasta_file(input_file_path, dest_dir, prefix = 'part', number_of_sequences_per_file = 100):
     debug('split file: %s' % input_file_path)
