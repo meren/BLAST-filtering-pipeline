@@ -33,7 +33,7 @@ def findCaller():
         if filename == srcFile:
             f = f.f_back
             continue
-        return ":".join([os.path.basename(filename), str(f.f_lineno)])
+        return ":".join([os.path.basename(filename)[:-3], str(f.f_lineno)])
 
 
 def __raw(msg, f):
