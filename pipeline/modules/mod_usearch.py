@@ -11,40 +11,49 @@
 
 description = "USEARCH module"
 
-cmdline = "usearch -query %(input)s -blast6out %(output)s -wdb %(target_db)s %(params_from_config)s &> %(log)s"
+searchcmd = "usearch -query %(input)s -blast6out %(output)s -wdb %(target)s %(cmdparams)s &> %(log)s"
 rfnparams = {'min_alignment_length': int, 
              'min_identity': float}
 
-from pipeline.utils import utils
 
+from pipeline.utils import utils
+from pipeline.utils.logger import debug
+from pipeline.utils.logger import error
 
 class ModuleError(Exception):
     def __init__(self, e = None):
         Exception.__init__(self)
         self.e = e
+        error(e)
         return
     def __str__(self):
-        return 'Config Error: %s' % self.e
+        return 'Module Error: %s' % self.e
 
-def init(f_object):
-    # split input file into numerous smaller pieces:
-    utils.check_dir(f_object.dirs['parts'], clean_dir_content = True)
-    f_object.files['r1_parts'] = utils.split_fasta_file(f_object.files['in_r1'], f_object.dirs['parts'], prefix = 'r1-part')
+def clean(m):
+    utils.check_dir(m.dirs['parts'], clean_dir_content = True)
+
+def init(m):
+    m.files['r1_parts'] = utils.split_fasta_file(m.files['in_r1'], m.dirs['parts'], prefix = 'r1-part')
     
-    if not len(f_object.files['r1_parts']):
-        raise ModuleError, 'split_fasta_file returned 0 for "%s"' % f_object.files['in_r1']
+    if not len(m.files['r1_parts']):
+        raise ModuleError, 'split_fasta_file returned 0 for "%s"' % m.files['in_r1']
 
-def run(f_object):
-    for part in f_object.files['r1_parts']:
-        cmdline % {
-                            'input': part,
-                            'output': part + '.b6',
-                            'target_db': f_object.target_db,
-                            'log': part + '.log',
-                            'params_from_config': None,
+def run(m):
+    parts = m.files['r1_parts']
+    for part in parts:
+        params = {'input': part, 'output': part + '.b6', 'target': m.target_db, 
+                  'log': part + '.log', 'cmdparams': ' '.join(m.cmdparams)}
+        debug('running part %d/%d (log: %s)' % (parts.index(part) + 1, len(parts), params['log']))
+        cmdline = searchcmd % params
+        utils.run_command(cmdline)
 
-                        }
-                
+def finalize(m):
+    dest_file = m.files['search_output']
+    debug('Search results are being concatenating: %s' % dest_file)
+    utils.concatenate_files(dest_file, [part + '.b6' for part in m.files['r1_parts']])
 
-def finalize(f_object):
+def refine(m):
+    pass
+
+def gen_filtered_ids(m):
     pass
