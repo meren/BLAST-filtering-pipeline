@@ -15,7 +15,9 @@ from pipeline.utils.fastalib import SequenceSource
 
 import os
 import sys
+import shutil
 import subprocess
+
 
 class UtilsError(Exception):
     def __init__(self, e = None):
@@ -26,13 +28,36 @@ class UtilsError(Exception):
     def __str__(self):
         return 'Utils Error: %s' % self.e
 
+
+def pp(n):
+    """Pretty print function for very big numbers.."""
+    ret = []
+    n = str(n)
+    for i in range(len(n) - 1, -1, -1):
+        ret.append(n[i])
+        if (len(n) - i) % 3 == 0:
+            ret.append(',')
+    ret.reverse()
+    return ''.join(ret[1:]) if ret[0] == ',' else ''.join(ret)
+
+
 def concatenate_files(dest_file, file_list):
+    debug('concatenate; dest: %s' % dest_file)
     dest_file_obj = open(dest_file, 'w')
     for chunk_path in file_list:
         for line in open(chunk_path):
             dest_file_obj.write(line)
 
     return dest_file_obj.close()
+
+
+def copy_file(source_file, dest_file):
+    debug('copy file; dest: "%s", src: "%s"' % (source_file, dest_file))
+    try:
+        return shutil.copyfile(source_file, dest_file)
+    except IOError, e:
+        raise UtilsError, "copy failed due to the following reason: '%s' (src: %s, dst: %s)" \
+                                        % (e, source_file, dest_file)
 
 def run_command(cmdline):
        try:
@@ -41,9 +66,58 @@ def run_command(cmdline):
        except OSError, e:
            raise UtilsError, "command was failed for the following reason: '%s' ('%s')" % (e, cmdline)   
 
+
+def refine_b6(source_file, dest_file, params):
+    # FIXME: check if source_file is a valid m8 output.
+    debug('refine b6; dest: %s' % (dest_file))
+    try:
+        b6 = open(source_file)
+    except IOError, e:
+        raise UtilsError, "open failed due to the following reason: '%s' (src: %s)" \
+                                        % (e, source_file)
+
+    try:
+        output = open(dest_file, 'w')
+    except IOError, e:
+        raise UtilsError, "open failed due to the following reason: '%s' (src: %s)" \
+                                        % (e, dest_file)
+
+    QUERY_ID, SUBJECT_ID, IDENTITY, ALIGNMENT_LENGTH,\
+    MISMATCHES, GAPS, Q_START, Q_END, S_START,\
+    S_END, E_VALUE, BIT_SCORE = range(0, 12)
+
+    conversion = [str, str, float, int, int, int, int, int, int, int, float, float]
+    CONV = lambda x, i: conversion[i](x)
+
+    counter, previous_query_id = 0, None
+
+    for line in (l for l in b6 if not l.startswith('#')):
+        #if counter % 10000 == 0:
+        #    sys.stderr.write('\rReading B6: ~ %s' % (pp(counter)))
+        #    sys.stderr.flush()
+        counter += 1
+
+        s = line.split(('\t'))
+
+        if params.has_key('unique_hits') and params['unique_hits'] and CONV(s[QUERY_ID], QUERY_ID) == previous_query_id:
+            continue
+
+        if params.has_key('min_alignment_length') and CONV(s[ALIGNMENT_LENGTH], ALIGNMENT_LENGTH) < params['min_alignment_length']:
+            continue
+
+        if params.has_key('min_identity') and CONV(s[IDENTITY], IDENTITY) < params['min_identity']:
+            continue
+
+        # At this point, this entry must be what we are looking for.
+        # We shall store it.
+        output.write(line)
+        previous_query_id = CONV(s[QUERY_ID], QUERY_ID)
+
+    return output.close()
+
+
 def split_fasta_file(input_file_path, dest_dir, prefix = 'part', number_of_sequences_per_file = 100):
-    debug('split file: %s' % input_file_path)
-    debug('into dest dir: %s' % dest_dir)
+    debug('split fasta file; src: %s, dest dir: %s' % (input_file_path, dest_dir))
     
     input = SequenceSource(input_file_path)
     
