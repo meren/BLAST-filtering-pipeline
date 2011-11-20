@@ -11,11 +11,25 @@
 
 description = "BLAST module"
 
-def init(f_object):
+searchcmd = ""
+
+allowed_rfnparams = {}
+
+from pipeline.utils import utils
+from pipeline.utils.logger import debug
+from pipeline.utils.logger import error
+
+def clean(m):
     pass
 
-def run(f_object):
+def init(m):
     pass
 
-def finalize(f_object):
+def run(m):
+    pass
+
+def refine(m):
+    pass
+
+def finalize(m):
     pass

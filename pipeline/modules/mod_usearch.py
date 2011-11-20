@@ -12,8 +12,10 @@
 description = "USEARCH module"
 
 searchcmd = "usearch -query %(input)s -blast6out %(output)s -wdb %(target)s %(cmdparams)s &> %(log)s"
-rfnparams = {'min_alignment_length': int, 
-             'min_identity': float}
+
+allowed_rfnparams = {'min_alignment_length': int, 
+                     'min_identity': float,
+                     'unique_hits': int}
 
 
 from pipeline.utils import utils
@@ -34,9 +36,6 @@ def clean(m):
 
 def init(m):
     m.files['r1_parts'] = utils.split_fasta_file(m.files['in_r1'], m.dirs['parts'], prefix = 'r1-part')
-    
-    if not len(m.files['r1_parts']):
-        raise ModuleError, 'split_fasta_file returned 0 for "%s"' % m.files['in_r1']
 
 def run(m):
     parts = m.files['r1_parts']
@@ -46,14 +45,12 @@ def run(m):
         debug('running part %d/%d (log: %s)' % (parts.index(part) + 1, len(parts), params['log']))
         cmdline = searchcmd % params
         utils.run_command(cmdline)
-
-def finalize(m):
+    
     dest_file = m.files['search_output']
-    debug('Search results are being concatenating: %s' % dest_file)
     utils.concatenate_files(dest_file, [part + '.b6' for part in m.files['r1_parts']])
 
 def refine(m):
-    pass
-
-def gen_filtered_ids(m):
+    utils.refine_b6(m.files['search_output'], m.files['refined_search_output'], m.rfnparams)
+    
+def finalize(m):
     pass

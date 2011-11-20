@@ -22,22 +22,24 @@ An empty module frame:
      # Please read the docs/COPYING file.
      
      description = "Module description line"
-     
-     def init(f_object):
-         """Initialize files and directories, split input file
-            into smaller pieces if necessary, check binaries and
-            parameters, etc."""
+    
+     def clean(m):
+        """Clean directory module work directory content"""
+        pass
+
+     def init(m):
+         """Initialize files and directories"""
          pass
      
-     def run(f_object):
-         """Perform the actual run, implement nested funcitons
-         or classes to handle intricate run-time tasks."""
+     def run(m):
+         """Run time task"""
          pass
-     
+    
+     def refine(m):
+         """Refine search output"""
+         pass
+
      def finalize(f_object):
-         """Based on the criteria defined in the config file,
-         refine search results to finally come up with a list
-         of IDs to specify which reads are not going to go to
-         the next filter in the chain."""
+         """Generate the list of IDs that will not go to the next filter"""
          pass
 
