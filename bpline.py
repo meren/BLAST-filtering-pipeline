@@ -26,7 +26,7 @@ from pipeline.classes.config import Config
 def main(config):
     for filter in config.filters:
         config.init_filter_files_and_directories(filter)
-        filter.run()
+        filter.execute()
         sys.exit()
 
 if __name__ == '__main__':
