@@ -21,17 +21,19 @@ class Filter:
         self.name = None
         self.module = None
         self.cmdparams = []
-        self.rfnparams = []
+        self.rfnparams = {}
         self.dirs = {}
         self.files = {}
 
-    def run(self):
+    def execute(self):
+        self.module.clean(self)
         self.module.init(self)
         self.module.run(self)
+        self.module.refine(self)
         self.module.finalize(self)
 
     def get_refinement_params(self):
-        if hasattr(self.module, 'rfnparams'):
-            return self.module.rfnparams.keys()
+        if hasattr(self.module, 'allowed_rfnparams'):
+            return self.module.allowed_rfnparams.keys()
         else:
-            return []
+            return {}

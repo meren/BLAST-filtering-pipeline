@@ -98,7 +98,7 @@ class Config:
                 param = '.'.join(option.split('.')[1:])
                 opt = filters_config.get(section, option)
                 if param in filter.get_refinement_params():
-                    filter.rfnparams.append((param, filter.module.rfnparams[param](opt)),)
+                    filter.rfnparams[param] = filter.module.allowed_rfnparams[param](opt)
                 else:
                     raise ConfigError, 'Unknown refinement parameter for filter "%s": "%s"' \
                                    % (filter.name, param)
