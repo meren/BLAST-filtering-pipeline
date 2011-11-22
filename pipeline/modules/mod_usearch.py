@@ -35,10 +35,10 @@ def clean(m):
     utils.check_dir(m.dirs['parts'], clean_dir_content = True)
 
 def init(m):
-    m.files['r1_parts'] = utils.split_fasta_file(m.files['in_r1'], m.dirs['parts'], prefix = 'r1-part')
+    m.files['parts'] = utils.split_fasta_file(m.files['input'], m.dirs['parts'], prefix = 'part')
 
 def run(m):
-    parts = m.files['r1_parts']
+    parts = m.files['parts']
     for part in parts:
         params = {'input': part, 'output': part + '.b6', 'target': m.target_db, 
                   'log': part + '.log', 'cmdparams': ' '.join(m.cmdparams)}
@@ -47,7 +47,7 @@ def run(m):
         utils.run_command(cmdline)
     
     dest_file = m.files['search_output']
-    utils.concatenate_files(dest_file, [part + '.b6' for part in m.files['r1_parts']])
+    utils.concatenate_files(dest_file, [part + '.b6' for part in m.files['parts']])
 
 def refine(m):
     utils.refine_b6(m.files['search_output'], m.files['refined_search_output'], m.rfnparams)

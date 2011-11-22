@@ -14,14 +14,15 @@ import argparse
 
 def get_parser_obj():
     parser = argparse.ArgumentParser(description='Metagenomics BLAST Filtering Pipeline')
-    parser.add_argument('-s', '--filters-config', required=True, metavar = 'STAGES_CONFIG',
+    parser.add_argument('-s', '--filters-config', required=True, metavar = 'CONFIG FILE PATH',
                                         help = 'File in which BLAST filtering targets are defined')
-    parser.add_argument('--r1', required=True, metavar = 'FASTA_FILE',
-                            help = 'First pair of the input Illumina file')
-    parser.add_argument('--r2', required=True, metavar = 'FASTA_FILE',
-                            help = 'Second pair of the input Illumina file')
-    parser.add_argument('-o', '--output_dir', required=True, metavar = 'OUTPUT_DIR',
-                            help = 'Root directory for output to be stored')
+    parser.add_argument('-i', '--input', required=True, metavar = 'FILE PATH',
+                            help = 'Input file in FASTA format')
+    parser.add_argument('-o', '--base-work-dir', required=True, metavar = 'DIRECTORY',
+                            help = 'Base working directory (in which new directories for datasets\
+                                    will be created to store output files)')
+    parser.add_argument('-d', '--dataset-name', required=True, metavar = 'NAME',
+                            help = 'Dataset name for file and directory names')
 
     return parser
 

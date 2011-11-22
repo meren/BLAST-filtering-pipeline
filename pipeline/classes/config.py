@@ -49,17 +49,18 @@ class ConfigParserWrapper(ConfigParser):
 class Config:
     def __init__(self, args, constants):
         if args:
-            self.r1 = args.r1
-            self.r2 = args.r2
-            self.output_dir = args.output_dir
+            self.base_work_dir = args.base_work_dir
+            self.dataset_name  = args.dataset_name
+            self.dataset_root_dir = os.path.join(self.base_work_dir, self.dataset_name)
+            self.input = args.input
             self.constants = constants
             self.filters = []
             self.modules = {}
 
             self.init_modules()
+            self.init_essential_files_and_directories()
             self.init_filters_config(args.filters_config)
             self.init_chain_of_filters()
-            self.init_essential_files_and_directories()
 
     
     def init_modules(self):
@@ -69,6 +70,19 @@ class Config:
                 mod_name = file[4:-3]
                 self.modules[mod_name] = imp.load_source(mod_name, os.path.join(mod_base, file))
                 debug('module "%s" found' % mod_name)
+
+
+    def init_essential_files_and_directories(self):
+        IS_RELATIVE = lambda d: not d.startswith('/')
+
+        if len([True for item in [self.base_work_dir, self.input] if IS_RELATIVE(item)]):
+            raise ConfigError, 'All paths should be absolute (starting with a "/").'
+
+        if not os.path.exists(self.input):
+            raise ConfigError, 'Input file is not where it is expected to be: "%s"' % self.input
+        
+        utils.check_dir(self.base_work_dir, clean_dir_content = False)
+        utils.check_dir(self.dataset_root_dir, clean_dir_content = False)
 
 
     def init_filters_config(self, config_file_path):
@@ -105,70 +119,51 @@ class Config:
             
             debug('refinement line params for filter "%s": %s ' % (filter.name, filter.rfnparams))
 
-            filter.dirs['root']  = self.output_dir
-            filter.dirs['base']  = os.path.join(self.output_dir, filter.name)
-            filter.dirs['parts'] = os.path.join(filter.dirs['base'], 'parts')
+            filter.dirs['output']  = os.path.join(self.dataset_root_dir, filter.name)
+            filter.dirs['parts'] = os.path.join(filter.dirs['output'], 'parts')
             self.filters.append(filter)
 
     def init_chain_of_filters(self):
         for i in range(0, len(self.filters)):
             filter = self.filters[i]
            
-            # in this context WORK_DIR defines the directory that is dedicated to the 
-            # filter, while OUTPUT_DIR returnes the root directory that contains
-            # everything including filter directories..
-            WORK_DIR   = lambda x: os.path.join(self.output_dir, filter.name, x)
-            OUTPUT_DIR = lambda x: os.path.join(self.output_dir, x)
-            
+            J = lambda x: os.path.join(filter.dirs['output'], x)
+
             if i == 0:
-                # first filter. in_r1, in_r2 should be coming from the command
+                # first filter. input should be coming from the command
                 # line parameters:
-                filter.files['in_r1'] = self.r1
-                filter.files['in_r2'] = self.r2
+                filter.files['input'] = self.input
             else:
                 # any filter that is not the first one should use the previous filter's
                 # output files as input:
-                filter.files['in_r1'] = self.filters[i - 1].files['filtered_r1']
-                filter.files['in_r2'] = self.filters[i - 1].files['filtered_r2']
+                filter.files['input'] = self.filters[i - 1].files['filtered']
           
-            filter.files['search_output'] = WORK_DIR('--'.join([os.path.basename(self.r1), filter.name + '.SEARCH-RESULTS']))
-            filter.files['refined_search_output'] = WORK_DIR('--'.join([os.path.basename(self.r1), filter.name + '.SEARCH-RESULTS-REFINED']))
-            filter.files['out_r1'] = WORK_DIR('--'.join([os.path.basename(self.r1), filter.name]))
-            filter.files['out_r2'] = WORK_DIR('--'.join([os.path.basename(self.r2), filter.name]))
-            filter.files['filtered_r1'] = OUTPUT_DIR('--'.join([filter.files['in_r1'], filter.name + '_filtered']))
-            filter.files['filtered_r2'] = OUTPUT_DIR('--'.join([filter.files['in_r2'], filter.name + '_filtered']))
+            filter.files['search_output'] = J('01_raw_hits.txt')
+            filter.files['refined_search_output'] = J('02_refined_hits.txt')
+            filter.files['hit_ids'] = J('03_hits.ids')
+            filter.files['filtered'] = J('04_filtered.fa')
+            filter.files['survived'] = J('05_survived.fa') 
 
-    def init_essential_files_and_directories(self):
-        IS_RELATIVE = lambda d: not d.startswith('/')
-
-        if len([True for item in [self.output_dir, self.r1, self.r2] if IS_RELATIVE(item)]):
-            raise ConfigError, 'All paths should be absolute (starting with a "/").'
-
-        if not os.path.exists(self.r1):
-            raise ConfigError, 'Pair 1 is not where it is expected to be: "%s"' % self.r1
-        
-        if not os.path.exists(self.r2):
-            raise ConfigError, 'Pair 2 is not where it is expected to be: "%s"' % self.r2
-
-        utils.check_dir(self.output_dir, clean_dir_content = False)
 
     def init_filter_files_and_directories(self, filter):
         utils.check_dir(filter.dirs['parts'])
 
     def print_summary(self):
-        print('\nSummary of filters and input/output destinations:\n--')
+        print('\nSummary of filters and input/output destinations:\n')
+        utils.info('Dataset name', self.dataset_name)
+        utils.info('Working Direcotory', self.base_work_dir)
+        print('--\n')
         for filter in self.filters:
             utils.info('Filter name', filter.name)
             utils.info('Module', filter.module.__name__)
             utils.info('Target DB', filter.target_db)
+            utils.info('Input file', filter.files['input'])
+            utils.info('Filter Output Direcotory', filter.dirs['output'])
             utils.info('Search Output', filter.files['search_output'])
             utils.info('Inspected Search Output', filter.files['refined_search_output'])
-            utils.info('R1 input', filter.files['in_r1'])
-            utils.info('R2 input', filter.files['in_r2'])
-            utils.info('R1 output', filter.files['out_r1'])
-            utils.info('R2 output', filter.files['out_r2'])
-            utils.info('Filtered R1', filter.files['filtered_r1'])
-            utils.info('Filtered R2', filter.files['filtered_r2'])
+            utils.info('Filtered IDs', filter.files['hit_ids'])
+            utils.info('Filtered Input', filter.files['filtered'])
+            utils.info('Output to the next Stage', filter.files['survived'])
             print '\n--\n'
 
 if __name__ == '__main__':
