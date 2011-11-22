@@ -43,7 +43,7 @@ def __raw(msg, f):
     sys.stderr.write(output)
 
 def __log(level, caller, msg, f):
-    output = "%s | %-6.6s | %-16.16s | %s\n" %(time.asctime(), level, caller, msg)
+    output = "%s | %-6.6s| %-16.16s | %s\n" %(time.asctime(), level, caller, msg)
     if f:
         open(f, "a").write(output)
     sys.stderr.write(output)
