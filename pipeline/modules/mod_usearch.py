@@ -53,4 +53,4 @@ def refine(m):
     utils.refine_b6(m.files['search_output'], m.files['refined_search_output'], m.rfnparams)
     
 def finalize(m):
-    pass
+    utils.store_ids_from_b6_output(m.files['refined_search_output'], m.files['hit_ids'])

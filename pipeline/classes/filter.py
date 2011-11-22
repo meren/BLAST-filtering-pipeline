@@ -32,6 +32,9 @@ class Filter:
         self.module.refine(self)
         self.module.finalize(self)
 
+        # FIXME: you have the passing id's at self.files['hit_ids'],
+        # time to extcract those from the sequences file..
+
     def get_refinement_params(self):
         if hasattr(self.module, 'allowed_rfnparams'):
             return self.module.allowed_rfnparams.keys()

@@ -122,16 +122,24 @@ class Config:
                                    % (filter.name, param)
             
             debug('refinement line params for filter "%s": %s ' % (filter.name, filter.rfnparams))
-
+            
+            
+            # take care of file paths and directories
+            J = lambda x: os.path.join(filter.dirs['output'], x)
+            
             filter.dirs['output']  = os.path.join(self.dataset_root_dir, filter.name)
-            filter.dirs['parts'] = os.path.join(filter.dirs['output'], 'parts')
+            filter.dirs['parts'] = J('parts')
+            filter.files['search_output'] = J('01_raw_hits.txt')
+            filter.files['refined_search_output'] = J('02_refined_hits.txt')
+            filter.files['hit_ids'] = J('03_hits.ids')
+            filter.files['filtered_reads'] = J('04_filtered.fa')
+            filter.files['survived_reads'] = J('05_survived.fa') 
+
             self.filters.append(filter)
 
     def init_chain_of_filters(self):
         for i in range(0, len(self.filters)):
             filter = self.filters[i]
-           
-            J = lambda x: os.path.join(filter.dirs['output'], x)
 
             if i == 0:
                 # first filter. input should be coming from the command
@@ -142,12 +150,6 @@ class Config:
                 # output files as input:
                 filter.files['input'] = self.filters[i - 1].files['filtered_reads']
           
-            filter.files['search_output'] = J('01_raw_hits.txt')
-            filter.files['refined_search_output'] = J('02_refined_hits.txt')
-            filter.files['hit_ids'] = J('03_hits.ids')
-            filter.files['filtered_reads'] = J('04_filtered.fa')
-            filter.files['survived_reads'] = J('05_survived.fa') 
-
 
     def init_filter_files_and_directories(self, filter):
         utils.check_dir(filter.dirs['parts'])
