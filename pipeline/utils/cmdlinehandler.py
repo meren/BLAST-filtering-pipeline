@@ -23,6 +23,9 @@ def get_parser_obj():
                                     will be created to store output files)')
     parser.add_argument('-d', '--dataset-name', required=True, metavar = 'NAME',
                             help = 'Dataset name for file and directory names')
+    
+    parser.add_argument('--dry-run', action = 'store_true', default = False,
+                            help = 'Print out configuration and exit')
 
     return parser
 

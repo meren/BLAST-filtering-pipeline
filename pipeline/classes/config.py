@@ -49,11 +49,13 @@ class ConfigParserWrapper(ConfigParser):
 class Config:
     def __init__(self, args, constants):
         if args:
-            self.base_work_dir = args.base_work_dir
-            self.dataset_name  = args.dataset_name
-            self.dataset_root_dir = os.path.join(self.base_work_dir, self.dataset_name)
-            self.input = args.input
+            self.args = args
             self.constants = constants
+            self.base_work_dir = self.args.base_work_dir
+            self.dataset_name  = self.args.dataset_name
+            self.input = self.args.input
+            
+            self.dataset_root_dir = os.path.join(self.base_work_dir, self.dataset_name)
             self.filters = []
             self.modules = {}
 
@@ -61,6 +63,8 @@ class Config:
             self.init_essential_files_and_directories()
             self.init_filters_config(args.filters_config)
             self.init_chain_of_filters()
+            debug('Config class is initialized with %d modules and %d filters'\
+                                % (len(self.modules), len(self.filters)))
 
     
     def init_modules(self):
@@ -136,35 +140,17 @@ class Config:
             else:
                 # any filter that is not the first one should use the previous filter's
                 # output files as input:
-                filter.files['input'] = self.filters[i - 1].files['filtered']
+                filter.files['input'] = self.filters[i - 1].files['filtered_reads']
           
             filter.files['search_output'] = J('01_raw_hits.txt')
             filter.files['refined_search_output'] = J('02_refined_hits.txt')
             filter.files['hit_ids'] = J('03_hits.ids')
-            filter.files['filtered'] = J('04_filtered.fa')
-            filter.files['survived'] = J('05_survived.fa') 
+            filter.files['filtered_reads'] = J('04_filtered.fa')
+            filter.files['survived_reads'] = J('05_survived.fa') 
 
 
     def init_filter_files_and_directories(self, filter):
         utils.check_dir(filter.dirs['parts'])
-
-    def print_summary(self):
-        print('\nSummary of filters and input/output destinations:\n')
-        utils.info('Dataset name', self.dataset_name)
-        utils.info('Working Direcotory', self.base_work_dir)
-        print('--\n')
-        for filter in self.filters:
-            utils.info('Filter name', filter.name)
-            utils.info('Module', filter.module.__name__)
-            utils.info('Target DB', filter.target_db)
-            utils.info('Input file', filter.files['input'])
-            utils.info('Filter Output Direcotory', filter.dirs['output'])
-            utils.info('Search Output', filter.files['search_output'])
-            utils.info('Inspected Search Output', filter.files['refined_search_output'])
-            utils.info('Filtered IDs', filter.files['hit_ids'])
-            utils.info('Filtered Input', filter.files['filtered'])
-            utils.info('Output to the next Stage', filter.files['survived'])
-            print '\n--\n'
 
 if __name__ == '__main__':
     pass

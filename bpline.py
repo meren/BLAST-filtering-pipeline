@@ -20,10 +20,15 @@ import sys
 
 # non-standard python modules
 from pipeline.utils.cmdlinehandler import get_parser_obj
+from pipeline.utils.utils import print_config_summary
 from pipeline.classes.constants import Constants as c
 from pipeline.classes.config import Config
 
 def main(config):
+    if config.args.dry_run:
+        print_config_summary(config)
+        sys.exit()
+
     for filter in config.filters:
         config.init_filter_files_and_directories(filter)
         filter.execute()

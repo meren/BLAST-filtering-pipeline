@@ -166,3 +166,23 @@ def info(label, value, mlen = 30, file_obj = None):
     if file_obj:
         info_file_obj.write(info_line + '\n')
     print info_line
+
+def print_config_summary(config):
+    print('\nSummary of filters and intended input/output destinations:\n')
+    info('Dataset name', config.dataset_name)
+    info('Working Direcotory', config.base_work_dir)
+    print('\n')
+    for filter in config.filters:
+        info('  Filter name', filter.name)
+        info('    Module', filter.module.__name__)
+        info('    Target DB', filter.target_db)
+        info('    Input file', filter.files['input'])
+        info('    Filter Output Direcotory', filter.dirs['output'])
+        info('    Search Output', filter.files['search_output'])
+        info('    Inspected Search Output', filter.files['refined_search_output'])
+        info('    Filtered IDs', filter.files['hit_ids'])
+        info('    Filtered Input', filter.files['filtered_reads'])
+        info('    Output to the next Stage', filter.files['survived_reads'])
+        print '\n'
+
+
