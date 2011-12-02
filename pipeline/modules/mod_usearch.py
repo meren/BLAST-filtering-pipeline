@@ -9,18 +9,18 @@
 #
 # Please read the docs/COPYING file.
 
-description = "USEARCH module"
+DESCRIPTION = "USEARCH module"
 
-searchcmd = "usearch -query %(input)s -blast6out %(output)s -wdb %(target)s %(cmdparams)s &> %(log)s"
+SEARCH_COMMAND = "usearch -query %(input)s -blast6out %(output)s -wdb %(target)s %(cmdparams)s &> %(log)s"
 
-allowed_rfnparams = {'min_alignment_length': int, 
+ALLOWED_RFNPARAMS = {'min_alignment_length': int, 
                      'min_identity': float,
                      'unique_hits': int}
-
 
 from pipeline.utils import utils
 from pipeline.utils.logger import debug
 from pipeline.utils.logger import error
+
 
 class ModuleError(Exception):
     def __init__(self, e = None):
@@ -37,20 +37,27 @@ def clean(m):
 def init(m):
     m.files['parts'] = utils.split_fasta_file(m.files['input'], m.dirs['parts'], prefix = 'part')
 
-def run(m):
+def search(m):
     parts = m.files['parts']
     for part in parts:
         params = {'input': part, 'output': part + '.b6', 'target': m.target_db, 
                   'log': part + '.log', 'cmdparams': ' '.join(m.cmdparams)}
-        debug('running part %d/%d (log: %s)' % (parts.index(part) + 1, len(parts), params['log']))
-        cmdline = searchcmd % params
+        debug('searching part %d/%d (log: %s)' % (parts.index(part) + 1, len(parts), params['log']))
+        cmdline = SEARCH_COMMAND % params
         utils.run_command(cmdline)
     
     dest_file = m.files['search_output']
     utils.concatenate_files(dest_file, [part + '.b6' for part in m.files['parts']])
 
-def refine(m):
+def filter(m):
     utils.refine_b6(m.files['search_output'], m.files['refined_search_output'], m.rfnparams)
-    
-def finalize(m):
     utils.store_ids_from_b6_output(m.files['refined_search_output'], m.files['hit_ids'])
+
+
+FUNCTIONS_ORDER = ['clean', 'init', 'search', 'filter']
+FUNCTION_MAP    = {'clean' : clean,
+                   'init'  : init,
+                   'search': search,
+                   'filter': filter}
+
+

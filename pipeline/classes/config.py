@@ -96,12 +96,35 @@ class Config:
             filter = Filter(section)
             filter.name = filters_config.get(section, 'filter_name')
             
-            filter_module = filters_config.get(section, 'module')
-            if not self.modules.has_key(filter_module):
+            # assign module
+            module_from_config = filters_config.get(section, 'module')
+            if not self.modules.has_key(module_from_config):
                 raise ConfigError, 'Unknown module for filter "%s": "%s".\nAvailable modules:\n%s' \
-                                   % (filter.name, filter_module, ', '.join(self.modules.keys()))
+                                   % (filter.name, module_from_config, ', '.join(self.modules.keys()))
             else:
-                filter.module = self.modules[filter_module]
+                filter.module = self.modules[module_from_config]
+
+            # check the availability of the functions and the execution order, if the default 
+            # behavior has been changed manually in the config file
+            if filters_config.has_option(section, 'execute'):
+                execute_list_from_config = [e.strip() for e in filters_config.get(section, 'execute').split(',')]
+                for item in execute_list_from_config:
+                    if item not in filter.module.FUNCTIONS_ORDER:
+                        raise ConfigError, 'Unknown function for module "%s" in "%s": "%s".\nAvailable functions: %s' \
+                                   % (module_from_config, filter.name, item, ', '.join(filter.module.FUNCTIONS_ORDER))
+                if len(execute_list_from_config) != len(list(set(execute_list_from_config))):
+                    raise ConfigError, 'Functions cannot be executed more than once: %s' \
+                                   % (', '.join(execute_list_from_config))
+
+                # make sure the order is right.
+                t = [filter.module.FUNCTIONS_ORDER.index(i) for i in execute_list_from_config]
+                if False in [t[i] > t[i - 1] for i in range(1, len(t))]:
+                    raise ConfigError, 'Order of functions to be executed is not correct: %s\nFunctions should follow this order: %s' \
+                                   % (', '.join(execute_list_from_config), ', '.join(filter.module.FUNCTIONS_ORDER))
+
+                filter.execution_order = execute_list_from_config
+                
+                debug('filter module functions execution order has been set: "%s"' % (filter.execution_order))
 
             # store command line parameters from the config file
             for option in [o for o in filters_config.options(section) if o.startswith('cmdparam.')]:
@@ -116,7 +139,7 @@ class Config:
                 param = '.'.join(option.split('.')[1:])
                 opt = filters_config.get(section, option)
                 if param in filter.get_refinement_params():
-                    filter.rfnparams[param] = filter.module.allowed_rfnparams[param](opt)
+                    filter.rfnparams[param] = filter.module.ALLOWED_RFNPARAMS[param](opt)
                 else:
                     raise ConfigError, 'Unknown refinement parameter for filter "%s": "%s"' \
                                    % (filter.name, param)

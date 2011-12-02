@@ -22,21 +22,33 @@ class Filter:
         self.module = None
         self.cmdparams = []
         self.rfnparams = {}
+        self.execution_order = []
         self.dirs = {}
         self.files = {}
 
     def execute(self):
-        self.module.clean(self)
-        self.module.init(self)
-        self.module.run(self)
-        self.module.refine(self)
-        self.module.finalize(self)
+        if not self.execution_order:
+            self.execution_order = self.module.FUNCTIONS_ORDER
+        
+        for func in self.execution_order:
+            self.module.FUNCTION_MAP[func](self)
 
-        # FIXME: you have the passing id's at self.files['hit_ids'],
-        # time to extcract those from the sequences file..
+        self.split()
 
     def get_refinement_params(self):
-        if hasattr(self.module, 'allowed_rfnparams'):
-            return self.module.allowed_rfnparams.keys()
+        if hasattr(self.module, 'ALLOWED_RFNPARAMS'):
+            return self.module.ALLOWED_RFNPARAMS.keys()
         else:
             return {}
+
+    def split(self):
+        """this function creates 04_filtered.fa and 05_survived.fa
+           files from self.files['input'] file, using ids in
+           self.files['hit_ids'] provided by the filter"""
+
+        # FIXME: user should be able to change the default behavior of
+        # this function (for instance user may require one filter not
+        # to split the content of the input file and the same input 
+        # to be used by the next filter.
+        
+        pass
