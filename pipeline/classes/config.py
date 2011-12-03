@@ -59,6 +59,7 @@ class Config:
             self.filters = []
             self.modules = {}
 
+            debug('Initializing configuration')
             self.init_modules()
             self.init_essential_files_and_directories()
             self.init_filters_config(args.filters_config)

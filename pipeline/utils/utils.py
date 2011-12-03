@@ -139,6 +139,7 @@ def copy_file(source_file, dest_file):
                                         % (e, source_file, dest_file)
 
 def run_command(cmdline):
+       debug('%s; cmd: %s' % (my_name(), cmdline))
        try:
            if subprocess.call(cmdline, shell = True) < 0:
                raise UtilsError, "command was terminated by signal: %d" % (-retcode)
@@ -164,9 +165,9 @@ def refine_b6(source_file, dest_file, params):
     previous_query_id = None
 
     while b6.next():
-        #if b6.pos % 10000 == 0:
-        #    sys.stderr.write('\rReading B6: ~ %s' % (pp(b6.pos)))
-        #    sys.stderr.flush()
+        if b6.pos % 10000 == 0 or b6.pos == 1:
+            sys.stderr.write('\rReading B6: ~ %s' % (pp(b6.pos)))
+            sys.stderr.flush()
 
         if params.has_key('unique_hits') and params['unique_hits'] and b6.query_id == previous_query_id:
             continue
@@ -182,6 +183,7 @@ def refine_b6(source_file, dest_file, params):
         output.write(b6.entry)
         previous_query_id = b6.query_id
 
+    sys.stderr.write('\n')
     return output.close()
 
 def store_ids_from_b6_output(source_b6_output, dest_file):

@@ -40,13 +40,13 @@ def __raw(msg, f):
     output = "\n%s\n" % (msg)
     if f:
         open(f, "a").write(output)
-    sys.stderr.write(output)
+    sys.stdout.write(output)
 
 def __log(level, caller, msg, f):
     output = "%s | %-6.6s| %-16.16s | %s\n" %(time.asctime(), level, caller, msg)
     if f:
         open(f, "a").write(output)
-    sys.stderr.write(output)
+    sys.stdout.write(output)
 
 
 def debug(msg, f = None): 

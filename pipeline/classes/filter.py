@@ -69,5 +69,3 @@ class Filter:
                          self.files['filtered_reads'],
                          self.files['survived_reads'])
 
-        debug('filter "%s" is done; filtered reads: "%s"; survived reads: "%s"'\
-                 % (self.name, self.files['filtered_reads'], self.files['survived_reads']))        
