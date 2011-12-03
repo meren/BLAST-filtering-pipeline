@@ -67,13 +67,67 @@ def my_name():
 
 
 def concatenate_files(dest_file, file_list):
-    debug('%s; dest: %s' % (my_name(), dest_file))
+    debug('%s; dest: "%s"' % (my_name(), dest_file))
     dest_file_obj = open(dest_file, 'w')
     for chunk_path in file_list:
         for line in open(chunk_path):
             dest_file_obj.write(line)
 
     return dest_file_obj.close()
+
+def split_file(ids_file, source_file, filtered_dest_file, survived_dest_file, type = 'fasta'):
+    """splits reads in input file into two files based on ids_file
+
+       for read_id in input:
+           if read_id in list_of_ids:
+               --> filtered_dest_file
+           else:
+               --> survived dest_file
+
+       """
+    debug('%s; src: "%s" (%s), filtered_dest: "%s", survived_dest: "%s"'\
+        % (my_name(), source_file, type, filtered_dest_file, survived_dest_file))
+    
+    try:
+       ids_to_filter = set([id.strip() for id in open(ids_file).readlines()])
+    except IOError:
+       raise FilterError, 'Hit IDs file missing ("%s").' \
+               % (ids_to_filter)
+  
+    if type == 'fasta':
+        
+        STORE = lambda e, f: f.write('>%s\n%s\n' % (e.id, e.seq))
+
+        input  = SequenceSource(source_file)
+        filtered_output = open(filtered_dest_file, 'w')
+        survived_output = open(survived_dest_file, 'w')
+        filtered_count, survived_count = 0, 0
+
+        while input.next():
+            if input.pos % 10000 == 0 or input.pos == 1:
+                sys.stderr.write('\rSplitting FASTA file: ~ %s' % (pp(input.pos)))
+                sys.stderr.flush()
+
+            if input.id in ids_to_filter:
+                ids_to_filter.remove(input.id)
+                STORE(input, filtered_output)
+                filtered_count += 1
+            else:
+                STORE(input, survived_output)
+                survived_count += 1
+       
+        sys.stderr.write('\n')
+        filtered_output.close()
+        survived_output.close()
+
+        debug('%s; done. of %s total reads, filtered: %s, survived: %s.'\
+                    % (my_name(), pp(filtered_count + survived_count),\
+                       pp(filtered_count), pp(survived_count)))
+    
+    else:
+        raise UtilsError, "type '%s' is not implemented" % (type)   
+    
+    return True
 
 
 def copy_file(source_file, dest_file):

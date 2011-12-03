@@ -63,33 +63,11 @@ class Filter:
         # this function (for instance user may require one filter not
         # to split the content of the input file and the same input 
         # to be used by the next filter.
-        try:
-            ids_to_filter = set([id.strip() for id in open(self.files['hit_ids']).readlines()])
-        except IOError:
-            raise FilterError, 'Hit IDs file missing ("%s").' \
-                    % (self.files['hit_ids'])
-
-        input  = u.SequenceSource(self.files['input'])
-        filtered_output = open(self.files['filtered_reads'], 'w')
-        survived_output = open(self.files['survived_reads'], 'w')
-
-        debug('input file is being splitted.')        
-
-        while input.next():
-            #if input.pos % 10000 == 0:
-            #    sys.stderr.write('\rSplitting FASTA file: ~ %s' % (utils.pp(input.pos)))
-            #    sys.stderr.flush()
-
-            if input.id in ids_to_filter:
-                ids_to_filter.remove(input.id)
-                filtered_output.write('>%s\n' % input.id)
-                filtered_output.write('%s\n' % input.seq)
-            else:
-                survived_output.write('>%s\n' % input.id)
-                survived_output.write('%s\n' % input.seq)
         
-        filtered_output.close()
-        survived_output.close()
+        utils.split_file(self.files['hit_ids'],
+                         self.files['input'],
+                         self.files['filtered_reads'],
+                         self.files['survived_reads'])
 
         debug('filter "%s" is done; filtered reads: "%s"; survived reads: "%s"'\
                  % (self.name, self.files['filtered_reads'], self.files['survived_reads']))        
