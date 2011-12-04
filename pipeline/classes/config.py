@@ -173,7 +173,7 @@ class Config:
             else:
                 # any filter that is not the first one should use the previous filter's
                 # output files as input:
-                filter.files['input'] = self.filters[i - 1].files['filtered_reads']
+                filter.files['input'] = self.filters[i - 1].files['survived_reads']
           
 
     def init_filter_files_and_directories(self, filter):
