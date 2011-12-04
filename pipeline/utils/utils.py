@@ -204,6 +204,41 @@ def store_ids_from_b6_output(source_b6_output, dest_file):
        output.write(b6.query_id + '\n') 
 
 
+def get_qstat_info(job_identifier):
+    try:
+        proc = subprocess.Popen(['qstat'], stdout=subprocess.PIPE)
+    except OSError, e:
+        raise UtilsError, "qstat command was failed for the following reason: '%s' ('%s')" % (e, cmdline)   
+    
+    info_dict = {'r': 0, 'qw': 0}
+    line_no = 0
+    
+    while True:
+        line = proc.stdout.readline()
+   
+        # skip the first two lines
+        if line_no < 2:
+            line_no += 1
+            continue
+    
+        if line != '':
+            #the real code does filtering here
+            id, priority, name, user, state = line.strip().split()[0:5]
+            if name == job_identifier:
+                try:
+                    info_dict[state] += 1
+                except KeyError:
+                    raise UtilsError, "unknown state for qstat: '%s' (known states: '%s')"\
+                             % (state, ', '.join(info_dict.keys()))   
+    
+            line_no += 1
+        else:
+            break
+    
+    return (info_dict['r'], info_dict['qw'])
+
+
+
 def split_fasta_file(input_file_path, dest_dir, prefix = 'part', number_of_sequences_per_file = 100):
     debug('%s; src: %s, dest dir: %s' % (my_name(), input_file_path, dest_dir))
     
@@ -215,6 +250,9 @@ def split_fasta_file(input_file_path, dest_dir, prefix = 'part', number_of_seque
 
     while input.next():
         if (input.pos - 1) % number_of_sequences_per_file == 0:
+            sys.stderr.write('\rCreating part: ~ %s' % (pp(next_part)))
+            sys.stderr.flush()
+
             if part_obj:
                 part_obj.close()
             file_path = os.path.join(dest_dir, prefix + '-%08d' % next_part)
@@ -228,6 +266,7 @@ def split_fasta_file(input_file_path, dest_dir, prefix = 'part', number_of_seque
     if part_obj:
         part_obj.close()
 
+    sys.stderr.write('\n')
     return parts
         
 
