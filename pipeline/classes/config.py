@@ -51,8 +51,8 @@ class Config:
         if args:
             self.args = args
             self.constants = constants
-            self.base_work_dir = self.args.base_work_dir
-            self.dataset_name  = self.args.dataset_name
+            self.base_work_dir = self.args.base_work_dir.replace(' ', '_')
+            self.dataset_name  = self.args.dataset_name.replace(' ', '_')
             self.input = self.args.input
             
             self.dataset_root_dir = os.path.join(self.base_work_dir, self.dataset_name)
@@ -96,6 +96,7 @@ class Config:
         for section in filters_config.sections():
             filter = Filter(section)
             filter.name = filters_config.get(section, 'filter_name')
+            filter.name = filter.name.replace(' ', '_')
             
             # assign module
             module_from_config = filters_config.get(section, 'module')
