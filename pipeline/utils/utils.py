@@ -210,7 +210,13 @@ def get_qstat_info(job_identifier):
     except OSError, e:
         raise UtilsError, "qstat command was failed for the following reason: '%s' ('%s')" % (e, cmdline)   
     
-    info_dict = {'r': 0, 'qw': 0}
+    qstat_state_codes = {'pending': ['qw', 'hqw', 'hRwq'],
+                         'running': ['r', 't', 'Rr', 'Rt'],
+                         'suspended': ['s', 'ts', 'S', 'tS', 'T', 'tT'],
+                         'error': ['Eqw', 'Ehqw', 'EhRqw'],
+                         'deleted': ['dr', 'dt', 'dRr', 'dRt', 'ds', 'dS', 'dT', 'dRs', 'dRS', 'dRT']}
+    
+    info_dict = {'pending': 0, 'running': 0, 'suspended': 0, 'error': 0, 'deleted': 0}
     line_no = 0
     
     while True:
@@ -222,12 +228,14 @@ def get_qstat_info(job_identifier):
             continue
     
         if line != '':
-            #the real code does filtering here
             id, priority, name, user, state = line.strip().split()[0:5]
             if name == job_identifier:
-                try:
-                    info_dict[state] += 1
-                except KeyError:
+                found = False
+                for s in qstat_state_codes:
+                    if state in qstat_state_codes[s]:
+                        found = True
+                        info_dict[s] += 1
+                if not found:
                     raise UtilsError, "unknown state for qstat: '%s' (known states: '%s')"\
                              % (state, ', '.join(info_dict.keys()))   
     
@@ -235,8 +243,7 @@ def get_qstat_info(job_identifier):
         else:
             break
     
-    return (info_dict['r'], info_dict['qw'])
-
+    return info_dict
 
 
 def split_fasta_file(input_file_path, dest_dir, prefix = 'part', number_of_sequences_per_file = 100):
