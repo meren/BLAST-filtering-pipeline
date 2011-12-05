@@ -32,7 +32,8 @@ def main(config):
     for filter in config.filters:
         config.init_filter_files_and_directories(filter)
         filter.execute()
-        sys.exit()
+
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main(Config(get_parser_obj().parse_args(), c(os.path.dirname(os.path.abspath(__file__))))))
