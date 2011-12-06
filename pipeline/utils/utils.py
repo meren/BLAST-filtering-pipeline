@@ -44,6 +44,11 @@ def pp(n):
     ret.reverse()
     return ''.join(ret[1:]) if ret[0] == ',' else ''.join(ret)
 
+def p_tabular(label, value, label_length = 20, file_obj = None):
+    info_line = "%s %s: %s" % (label, '.' * (label_length - len(label)), str(value))
+    if file_obj:
+        info_file_obj.write(info_line + '\n')
+    print info_line
 
 def my_name():
     """a simple function that returns the name of the function from which it was called
@@ -290,10 +295,12 @@ def check_dir(dir, create=True, clean_dir_content = False):
 
     return True
 
+
 def delete_files_in_dir(dir):
     debug('%s; removing content of "%s"' % (my_name(), dir))
     for f in os.listdir(dir):
         os.unlink(os.path.join(dir, f))
+
 
 def info(label, value, mlen = 30, file_obj = None):
     info_line = "%s %s: %s" % (label, '.' * (mlen - len(label)), str(value))
