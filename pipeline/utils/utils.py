@@ -317,14 +317,16 @@ def print_config_summary(config):
     for filter in config.filters:
         info('  Filter name', filter.name)
         info('    Module', filter.module.__name__)
+        if len(filter.execution_order):
+            info('    Special Execution order', filter.execution_order) 
         info('    Target DB', filter.target_db)
-        info('    Input file', filter.files['input'])
+        info('    Input File', filter.files['input'])
         info('    Filter Output Direcotory', filter.dirs['output'])
         info('    Search Output', filter.files['search_output'])
         info('    Inspected Search Output', filter.files['refined_search_output'])
         info('    Filtered IDs', filter.files['hit_ids'])
         info('    Filtered Input', filter.files['filtered_reads'])
-        info('    Output to the next Stage', filter.files['survived_reads'])
+        info('    Output to the Next Stage', filter.files['survived_reads'])
         print '\n'
 
 
