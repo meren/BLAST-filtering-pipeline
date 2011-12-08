@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# v.110811
+# v.120711
 
 # Copyright (C) 2011, Marine Biological Laboratory
 #
@@ -20,6 +20,28 @@ try:
     pp = pipeline.utils.utils.pp
 except:
     pp = lambda x: x
+
+class FastaOutput:
+    def __init__(self, output_file_path):
+        self.output_file_path = output_file_path
+        self.output_file_obj = open(output_file_path, 'w')
+
+    def store(self, entry, split = True):
+        self.write_id(entry.id)
+        self.write_seq(entry.seq)
+
+    def write_id(self, id):
+        self.output_file_obj.write('>%s\n' % id)
+
+    def write_seq(self, sequence, split = True):
+        self.output_file_obj.write('%s\n' % self.split(entry.seq) if split else entry.seq)
+
+    def split(self, sequence, piece_length = 80):
+        ticks = range(0, len(sequence), piece_length) + [len(sequence)]
+        return '\n'.join([sequence[ticks[x]:ticks[x + 1]] for x in range(0, len(ticks) - 1)])
+
+    def close(self):
+        self.output_file_obj.close()
 
 class SequenceSource:
     def __init__(self, fasta_file_path, lazy_init = True):
@@ -149,4 +171,8 @@ class SequenceSource:
 
 if __name__ == '__main__':
     fasta = SequenceSource(sys.argv[1])
-    fasta.visualize_sequence_length_distribution(title = sys.argv[2] if len(sys.argv) == 3 else 'None')
+    output = FastaOutput(sys.argv[1] + 'out.fa')
+    #fasta.visualize_sequence_length_distribution(title = sys.argv[2] if len(sys.argv) == 3 else 'None')
+    while fasta.next():
+        output.store(fasta)
+    output.close()
