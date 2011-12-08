@@ -33,8 +33,8 @@ class FastaOutput:
     def write_id(self, id):
         self.output_file_obj.write('>%s\n' % id)
 
-    def write_seq(self, sequence, split = True):
-        self.output_file_obj.write('%s\n' % self.split(entry.seq) if split else entry.seq)
+    def write_seq(self, seq, split = True):
+        self.output_file_obj.write('%s\n' % self.split(seq) if split else seq)
 
     def split(self, sequence, piece_length = 80):
         ticks = range(0, len(sequence), piece_length) + [len(sequence)]
