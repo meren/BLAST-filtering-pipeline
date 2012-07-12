@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# v.120711
+# v.120530
 
 # Copyright (C) 2011, Marine Biological Laboratory
 #
@@ -13,28 +13,28 @@
 import os
 import sys
 import numpy
-
-sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-3]))
-try:
-    import pipeline.utils.utils
-    pp = pipeline.utils.utils.pp
-except:
-    pp = lambda x: x
+import hashlib
 
 class FastaOutput:
     def __init__(self, output_file_path):
         self.output_file_path = output_file_path
         self.output_file_obj = open(output_file_path, 'w')
 
-    def store(self, entry, split = True):
-        self.write_id(entry.id)
-        self.write_seq(entry.seq)
+    def store(self, entry, split = True, store_frequencies = True):
+        if entry.unique and store_frequencies:
+            self.write_id('%s|%s' % (entry.id, 'frequency:%d' % len(entry.ids)))
+        else:
+            self.write_id(entry.id)
+
+        self.write_seq(entry.seq, split)
 
     def write_id(self, id):
         self.output_file_obj.write('>%s\n' % id)
 
     def write_seq(self, seq, split = True):
-        self.output_file_obj.write('%s\n' % self.split(seq) if split else seq)
+        if split:
+            seq = self.split(seq)
+        self.output_file_obj.write('%s\n' % seq)
 
     def split(self, sequence, piece_length = 80):
         ticks = range(0, len(sequence), piece_length) + [len(sequence)]
@@ -43,30 +43,107 @@ class FastaOutput:
     def close(self):
         self.output_file_obj.close()
 
-class SequenceSource:
-    def __init__(self, fasta_file_path, lazy_init = True):
+
+class ReadFasta:
+    def __init__(self, f_name):
+        self.ids = []
+        self.sequences = []
+
+        self.fasta = SequenceSource(f_name)
+
+        while self.fasta.next():
+            if self.fasta.pos % 1000 == 0 or self.fasta.pos == 1:
+                sys.stderr.write('\r[fastalib] Reading FASTA into memory: %s' % (self.fasta.pos))
+                sys.stderr.flush()
+            self.ids.append(self.fasta.id)
+            self.sequences.append(self.fasta.seq)
+    
+        sys.stderr.write('\n')
+
+    def close(self):
+        self.fasta.close()
+
+
+class SequenceSource():
+    def __init__(self, fasta_file_path, lazy_init = True, unique = False):
         self.fasta_file_path = fasta_file_path
+        self.name = None
+        self.lazy_init = lazy_init
+        
         self.pos = 0
         self.id  = None
         self.seq = None
+        self.ids = []
+        
+        self.unique = unique
+        self.unique_hash_dict = {}
+        self.unique_hash_list = []
+        self.unique_next_hash = 0
+
         self.file_pointer = open(self.fasta_file_path)
         self.file_pointer.seek(0)
         
-        if lazy_init:
+        if self.lazy_init:
             self.total_seq = None
         else:
             self.total_seq = len([l for l in self.file_pointer.readlines() if l.startswith('>')])
+            self.reset()
 
+        if self.unique:
+            self.init_unique_hash()
+
+    def init_unique_hash(self):
+        while self.next_regular():
+            hash = hashlib.sha1(self.seq.upper()).hexdigest()
+            if hash in self.unique_hash_dict:
+                self.unique_hash_dict[hash]['ids'].append(self.id)
+                self.unique_hash_dict[hash]['count'] += 1
+            else:
+                self.unique_hash_dict[hash] = {'id' : self.id,
+                                               'ids': [self.id],
+                                               'seq': self.seq,
+                                               'count': 1}
+
+        self.unique_hash_list = [i[1] for i in sorted([(self.unique_hash_dict[hash]['count'], hash)\
+                        for hash in self.unique_hash_dict], reverse = True)]
+
+
+        self.total_unique = len(self.unique_hash_dict)
+        self.reset()
+ 
     def next(self):
-        self.id = self.file_pointer.readline()[1:].strip()
-        self.seq = None
+        if self.unique:
+            return self.next_unique()
+        else:
+            return self.next_regular()
 
+    def next_unique(self):
+        if self.unique:
+            if self.total_unique > 0 and self.pos < self.total_unique:
+                hash_entry = self.unique_hash_dict[self.unique_hash_list[self.pos]]
+                
+                self.pos += 1
+                self.seq = hash_entry['seq']
+                self.id  = hash_entry['id']
+                self.ids = hash_entry['ids']
+
+                return True
+            else:
+                return False
+        else:
+            return False
+        
+    def next_regular(self):
+        self.seq = None
+        self.id = self.file_pointer.readline()[1:].strip()
         sequence = ''
+        
         while 1:
             line = self.file_pointer.readline()
             if not line:
                 if len(sequence):
                     self.seq = sequence
+                    self.pos += 1
                     return True
                 else:
                     return False
@@ -79,10 +156,15 @@ class SequenceSource:
         self.pos += 1
         return True
 
+
+    def close(self):
+        self.file_pointer.close()
+
     def reset(self):
         self.pos = 0
         self.id  = None
         self.seq = None
+        self.ids = []
         self.file_pointer.seek(0)
 
     def visualize_sequence_length_distribution(self, title, dest = None, max_seq_len = None, xtickstep = None, ytickstep = None):
@@ -95,7 +177,7 @@ class SequenceSource:
     
         while self.next():
             if self.pos % 10000 == 0 or self.pos == 1:
-                sys.stderr.write('\r[fastalib] Reading: %s' % (pp(self.pos)))
+                sys.stderr.write('\r[fastalib] Reading: %s' % (self.pos))
                 sys.stderr.flush()
             sequence_lengths.append(len(self.seq))
         
@@ -134,7 +216,7 @@ class SequenceSource:
     
         plt.xticks(range(xtickstep, max_seq_len + 1, xtickstep), rotation=90, size='xx-small')
         plt.yticks(range(0, max(seq_len_distribution) + 1, ytickstep),
-                   [pp(y) for y in range(0, max(seq_len_distribution) + 1, ytickstep)],
+                   [y for y in range(0, max(seq_len_distribution) + 1, ytickstep)],
                    size='xx-small')
         plt.xlim(xmin = 0, xmax = max_seq_len)
         plt.ylim(ymin = 0, ymax = max(seq_len_distribution) + (max(seq_len_distribution) / 20.0))
@@ -147,10 +229,10 @@ class SequenceSource:
         plt.yticks([])
         plt.xticks([])
         plt.text(0.02, 0.5, 'total: %s / mean: %.2f / std: %.2f / min: %s / max: %s'\
-            % (pp(len(sequence_lengths)),
+            % (len(sequence_lengths),
                numpy.mean(sequence_lengths), numpy.std(sequence_lengths),\
-               pp(min(sequence_lengths)),\
-               pp(max(sequence_lengths))),\
+               min(sequence_lengths),\
+               max(sequence_lengths)),\
             va = 'center', alpha = 0.8, size = 'x-large')
     
         if dest == None:
@@ -167,12 +249,70 @@ class SequenceSource:
             pass
     
         return
-    
+ 
+
+class QualSource:
+    def __init__(self, quals_file_path, lazy_init = True):
+        self.quals_file_path = quals_file_path
+        self.name = None
+        self.lazy_init = lazy_init
+        
+        self.pos = 0
+        self.id  = None
+        self.quals = None
+        self.quals_int = None
+        self.ids = []
+        
+        self.file_pointer = open(self.quals_file_path)
+        self.file_pointer.seek(0)
+        
+        if self.lazy_init:
+            self.total_quals = None
+        else:
+            self.total_quals = len([l for l in self.file_pointer.readlines() if l.startswith('>')])
+            self.reset()
+
+
+    def next(self):
+        self.id = self.file_pointer.readline()[1:].strip()
+        self.quals = None
+        self.quals_int = None
+
+        qualscores = ''
+        
+        while 1:
+            line = self.file_pointer.readline()
+            if not line:
+                if len(qualscores):
+                    self.quals = qualscores.strip()
+                    self.quals_int = [int(q) for q in self.quals.split()]
+                    self.pos += 1
+                    return True
+                else:
+                    return False
+            if line.startswith('>'):
+                self.file_pointer.seek(self.file_pointer.tell() - len(line))
+                break
+            qualscores += ' ' + line.strip()
+
+        self.quals = qualscores.strip()
+        self.quals_int = [int(q) for q in self.quals.split()]
+        self.pos += 1
+
+        return True
+
+    def close(self):
+        self.file_pointer.close()
+
+    def reset(self):
+        self.pos = 0
+        self.id  = None
+        self.quals = None
+        self.quals_int = None
+        self.ids = []
+        self.file_pointer.seek(0)
+
 
 if __name__ == '__main__':
     fasta = SequenceSource(sys.argv[1])
-    output = FastaOutput(sys.argv[1] + 'out.fa')
-    #fasta.visualize_sequence_length_distribution(title = sys.argv[2] if len(sys.argv) == 3 else 'None')
-    while fasta.next():
-        output.store(fasta)
-    output.close()
+    fasta.visualize_sequence_length_distribution(title = sys.argv[2] if len(sys.argv) == 3 else 'None')
