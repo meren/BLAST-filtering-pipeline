@@ -95,9 +95,13 @@ class Config:
         filters_config.read(config_file_path)
         for section in filters_config.sections():
             filter = Filter(section)
-            filter.name = filters_config.get(section, 'filter_name')
-            filter.name = filter.name.replace(' ', '_')
-            
+            filter.name = filters_config.get(section, 'filter_name').replace(' ', '_')
+           
+            # check if the target database, which happens to be the section name,
+            # exists
+            if not (os.path.exists(section) and os.access(section, os.R_OK)):
+                raise ConfigError, 'Bad target (file not found / no read permission): "%s"' % section
+
             # assign module
             module_from_config = filters_config.get(section, 'module')
             if not self.modules.has_key(module_from_config):
