@@ -251,7 +251,7 @@ def get_qstat_info(job_identifier):
     return info_dict
 
 
-def split_fasta_file(input_file_path, dest_dir, prefix = 'part', number_of_sequences_per_file = 100):
+def split_fasta_file(input_file_path, dest_dir, prefix = 'part', number_of_sequences_per_file = 20000):
     debug('%s; src: %s, dest dir: %s' % (my_name(), input_file_path, dest_dir))
     
     input = SequenceSource(input_file_path)
