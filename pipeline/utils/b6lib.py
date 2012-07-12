@@ -61,11 +61,19 @@ class B6Source:
         self.e_value = None
         self.bit_score = None
 
-    def next(self, raw = False):
+    def show_progress(self, end = False):
+        sys.stderr.write('\r[b6lib] Reading: %s' % (pp(self.pos)))
+        sys.stderr.flush()
+        if end:
+            sys.stderr.write('\n')
+
+    def next(self, raw = False, show_progress = False, progress_step = 10000):
         while 1:
             self.entry = self.file_pointer.readline()
             
             if self.entry == '':
+                if show_progress:
+                    self.show_progress(end = True)
                 return False
 
             self.entry = self.entry.strip()
@@ -74,13 +82,22 @@ class B6Source:
                 self.pos   += 1
                 break
 
+        if show_progress and (self.pos == 1 or self.pos % progress_step == 0):
+            self.show_progress()
+
         if raw == True:
             return True
-       
-        self.query_id, self.subject_id, self.identity, self.alignment_length,\
-        self.mismatches, self.gaps, self.q_start, self.q_end, self.s_start,\
-        self.s_end, self.e_value, self.bit_score =\
-            [self.conversion[x](self.entry.split('\t')[x]) for x in range(0, 12)]
+      
+        try:
+            self.query_id, self.subject_id, self.identity, self.alignment_length,\
+            self.mismatches, self.gaps, self.q_start, self.q_end, self.s_start,\
+            self.s_end, self.e_value, self.bit_score =\
+                [self.conversion[x](self.entry.split('\t')[x]) for x in range(0, 12)]
+        except:
+            print
+            print 'Error: There is something wrong with this entry in the B6 file'
+            print self.entry
+            sys.exit()
 
         self.entry += '\n'
         return True
