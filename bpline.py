@@ -36,4 +36,4 @@ def main(config):
     return 0
 
 if __name__ == '__main__':
-    sys.exit(main(Config(get_parser_obj().parse_args(), c(os.path.dirname(os.path.abspath(__file__))))))
+    sys.exit(main(Config(get_parser_obj().parse_args(), c())))
