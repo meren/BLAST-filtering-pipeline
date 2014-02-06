@@ -35,7 +35,7 @@ class B6Source:
         self.file_pointer = open(self.b6_source)
         self.file_pointer.seek(0)
         
-        self.conversion = [str, str, float, int, int, int, int, int, int, int, float, float]
+        self.conversion = [str, str, float, int, int, int, int, int, int, int, str, str]
         
         if lazy_init:
             self.total_seq = None
@@ -93,6 +93,17 @@ class B6Source:
             self.mismatches, self.gaps, self.q_start, self.q_end, self.s_start,\
             self.s_end, self.e_value, self.bit_score =\
                 [self.conversion[x](self.entry.split('\t')[x]) for x in range(0, 12)]
+
+            try:
+                self.e_value = float(self.e_value)
+            except:
+                pass
+
+            try:
+                self.bit_score = float(self.bit_score)
+            except:
+                pass
+
         except:
             print
             print 'Error: There is something wrong with this entry in the B6 file'
