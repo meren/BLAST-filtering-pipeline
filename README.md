@@ -1,10 +1,3 @@
-______
-README
-======
-
-This code base contains a very early draft of what it promises. So, it might be a good idea to ignore this project for now.
-
-
 Aim of This Project
 ===================
 
